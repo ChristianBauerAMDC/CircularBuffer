@@ -21,36 +21,29 @@
 #include <stddef.h>
 
 #ifdef CIRCULAR_BUFFER_DEBUG
-#include <Print.h>
+//#include <Print.h>
+#include <stdio.h>
 #endif
 
-namespace Helper {
-	template<bool FITS8, bool FITS16> struct Index {
-		using Type = uint32_t;
-	};
 
-	template<> struct Index<false, true> {
-		using Type = uint16_t;
-	};
+template<typename T> class CircularBuffer {
+	
+private:
+	T* buffer;
+	T* head;
+	T* tail;
+	size_t count;
 
-	template<> struct Index<true, true> {
-		using Type = uint8_t;
-	};
-}
-
-template<typename T, size_t S, typename IT = typename Helper::Index<(S <= UINT8_MAX), (S <= UINT16_MAX)>::Type> class CircularBuffer {
 public:
-	/**
-	 * The buffer capacity: read only as it cannot ever change.
-	 */
-	static constexpr IT capacity = static_cast<IT>(S);
+	///**
+	// * The buffer capacity: read only as it cannot ever change.
+	// */
+	const size_t capacity;
 
-	/**
-	 * Aliases the index type, can be used to obtain the right index type with `decltype(buffer)::index_t`.
-	 */
-	using index_t = IT;
+	// Delete standard constructor
+	CircularBuffer() = delete;
 
-	constexpr CircularBuffer();
+	//constexpr CircularBuffer();
 
 	/**
 	 * Disables copy constructor
@@ -64,83 +57,216 @@ public:
 	CircularBuffer& operator=(const CircularBuffer&) = delete;
 	CircularBuffer& operator=(CircularBuffer&&) = delete;
 
+	CircularBuffer<T>(const size_t Capacity): capacity(Capacity), count(0)
+	{
+		//this->buffer[Capacity] = { 0 };
+		this->buffer = new T[capacity]();
+
+		head = buffer;
+		tail = buffer;
+
+	};
+
+	~CircularBuffer<T>()
+	{
+		// Clear memory assigned in constructor
+		delete[] this->buffer;
+	}
+
+
 	/**
 	 * Adds an element to the beginning of buffer: the operation returns `false` if the addition caused overwriting an existing element.
 	 */
-	bool unshift(T value);
+	inline bool enqueue(T value) {
+		
+		// If HEAD is at the start of the buffer, wrap around to the end
+		if (head == buffer) {
+			head = buffer + capacity;
+		}
+
+		// Save value left of HEAD
+		*--head = value;
+
+		// If buffer is full
+		if (count == capacity) {
+			// if TAIL is at the start of the array
+			if (tail-- == buffer) {
+				// wrap TAIL around to the end of the buffer
+				tail = buffer + capacity - 1;
+			}
+			return false;
+		}
+		else {
+			if (count++ == 0) {
+				tail = head;
+			}
+			return true;
+		}
+	}
 
 	/**
 	 * Adds an element to the end of buffer: the operation returns `false` if the addition caused overwriting an existing element.
 	 */
-	bool push(T value);
+	inline bool push(T value) {
+		if (++tail == buffer + capacity) {
+			tail = buffer;
+		}
+		*tail = value;
+		if (count == capacity) {
+			if (++head == buffer + capacity) {
+				head = buffer;
+			}
+			return false;
+		}
+		else {
+			if (count++ == 0) {
+				head = tail;
+			}
+			return true;
+		}
+	}
 
 	/**
 	 * Removes an element from the beginning of the buffer.
 	 * *WARNING* calling this operation on an empty buffer has an unpredictable behaviour.
 	 */
-	T shift();
+	inline T dequeue() {
+		T result = *head++;
+		if (head >= buffer + capacity) {
+			head = buffer;
+		}
+		count--;
+		return result;
+	}
 
 	/**
 	 * Removes an element from the end of the buffer.
 	 * *WARNING* calling this operation on an empty buffer has an unpredictable behaviour.
 	 */
-	T pop();
+	inline T pop() {
+		T result = *tail--;
+		if (tail < buffer) {
+			tail = buffer + capacity - 1;
+		}
+		count--;
+		return result;
+	}
+
 
 	/**
 	 * Returns the element at the beginning of the buffer.
 	 */
-	T inline first() const;
+	inline T first() const {
+		return *head;
+	}
 
 	/**
 	 * Returns the element at the end of the buffer.
 	 */
-	T inline last() const;
+	inline T last() const {
+		return *tail;
+	}
 
 	/**
 	 * Array-like access to buffer
 	 */
-	T operator [] (IT index) const;
+	inline T operator [](size_t index) const {
+		return *(buffer + ((head - buffer + index) % capacity));
+	}
 
 	/**
 	 * Returns how many elements are actually stored in the buffer.
 	 */
-	IT inline size() const;
+	inline size_t size() const {
+		return count;
+	}
 
 	/**
 	 * Returns how many elements can be safely pushed into the buffer.
 	 */
-	IT inline available() const;
+	inline size_t available() const {
+		return capacity - count;
+	}
 
 	/**
 	 * Returns `true` if no elements can be removed from the buffer.
 	 */
-	bool inline isEmpty() const;
+	bool inline isEmpty() const {
+		return count == 0;
+	}
 
 	/**
 	 * Returns `true` if no elements can be added to the buffer without overwriting existing elements.
 	 */
-	bool inline isFull() const;
+	bool inline isFull() const {
+		return count == capacity;
+	}
 
 	/**
 	 * Resets the buffer to a clean status, making all buffer positions available.
 	 */
-	void inline clear();
+	void inline clear() {
+		head = tail = buffer;
+		count = 0;
+	}
 
-	#ifdef CIRCULAR_BUFFER_DEBUG
-	void inline debug(Print* out);
-	void inline debugFn(Print* out, void (*printFunction)(Print*, T));
-	#endif
 
-private:
-	T buffer[S];
-	T *head;
-	T *tail;
-#ifndef CIRCULAR_BUFFER_INT_SAFE
-	IT count;
-#else
-	volatile IT count;
+
+#ifdef CIRCULAR_BUFFER_DEBUG
+
+	#include <string.h>
+		public:
+		inline void debug()
+		{
+			printf("COUNT: %d,\tHEAD: %p,\tTAIL: %p\n", count, head, tail);
+
+			// print entire buffer
+			for (auto i = 0; i < capacity; i++) {
+				printf("0x%04x ", *(buffer+i));
+			}
+			printf("\n");
+
+			for (size_t i = 0; i < capacity; i++)
+			{
+				if (head == buffer + i) {
+					printf("|HEAD| ");
+				}
+				if (tail == buffer + i) {
+					printf("|TAIL| ");
+				}
+
+				if ((head != buffer + i) && (tail != buffer +i))
+				{
+					printf("|----| ");
+				}
+			}
+			printf("\n\n");
+		}
+//
+//
+	//	void inline debugFn(Print* out, void (*printFunction)(Print*, T))
+	//	{
+	//		for (IT i = 0; i < capacity; i++) {
+	//			int hex = (int)buffer + i;
+	//			out->print(hex, HEX);
+	//			out->print("  ");
+	//			printFunction(out, *(buffer + i));
+	//			if (head == buffer + i) {
+	//				out->print(" head");
+	//			}
+	//			if (tail == buffer + i) {
+	//				out->print(" tail");
+	//			}
+	//			out->println();
+	//	}
+	//}
+
+
 #endif
+
 };
 
-#include <CircularBuffer.tpp>
+
+
+
 #endif
