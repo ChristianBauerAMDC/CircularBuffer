@@ -44,7 +44,7 @@ public:
 	CircularBuffer() = delete;
 
 	//constexpr CircularBuffer();
-
+	
 	/**
 	 * Disables copy constructor
 	 */
@@ -221,7 +221,7 @@ public:
 			printf("COUNT: %d,\tHEAD: %p,\tTAIL: %p\n", count, head, tail);
 
 			// print entire buffer
-			for (auto i = 0; i < capacity; i++) {
+			for (size_t i = 0; i < capacity; i++) {
 				printf("0x%04x ", *(buffer+i));
 			}
 			printf("\n");
