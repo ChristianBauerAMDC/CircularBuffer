@@ -154,14 +154,14 @@ public:
 
 
 	/**
-	 * Returns the element at the beginning of the buffer.
+	 * Returns the newest element in the buffer, which was added last
 	 */
 	inline T first() const {
 		return *head;
 	}
 
 	/**
-	 * Returns the element at the end of the buffer.
+	 * Returns the oldest element in the buffer, which was added first
 	 */
 	inline T last() const {
 		return *tail;
