@@ -130,7 +130,7 @@ public:
 	 * Removes an element from the beginning of the buffer.
 	 * *WARNING* calling this operation on an empty buffer has an unpredictable behaviour.
 	 */
-	inline T dequeue() {
+	inline T pop() {
 		T result = *head++;
 		if (head >= buffer + capacity) {
 			head = buffer;
@@ -143,7 +143,7 @@ public:
 	 * Removes an element from the end of the buffer.
 	 * *WARNING* calling this operation on an empty buffer has an unpredictable behaviour.
 	 */
-	inline T pop() {
+	inline T dequeue() {
 		T result = *tail--;
 		if (tail < buffer) {
 			tail = buffer + capacity - 1;
