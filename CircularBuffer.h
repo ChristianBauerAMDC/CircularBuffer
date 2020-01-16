@@ -168,7 +168,8 @@ public:
 	}
 
 	/**
-	 * Array-like access to buffer
+	 * Array-like access to buffer.
+	 * Attention: Element[0] is the last added value (=Stack order)
 	 */
 	inline T operator [](size_t index) const {
 		return *(buffer + ((head - buffer + index) % capacity));
