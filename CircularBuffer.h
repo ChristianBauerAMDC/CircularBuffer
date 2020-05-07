@@ -57,7 +57,7 @@ public:
 	CircularBuffer& operator=(const CircularBuffer&) = delete;
 	CircularBuffer& operator=(CircularBuffer&&) = delete;
 
-	CircularBuffer<T>(const size_t Capacity): capacity(Capacity), count(0)
+	CircularBuffer<T>(const size_t Capacity) : capacity(Capacity)
 	{
 		//this->buffer[Capacity] = { 0 };
 		this->buffer = new T[capacity]();
