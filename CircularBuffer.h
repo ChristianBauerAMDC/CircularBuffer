@@ -61,6 +61,7 @@ public:
 	{
 		//this->buffer[Capacity] = { 0 };
 		this->buffer = new T[capacity]();
+		count = 0;
 
 		head = buffer;
 		tail = buffer;
@@ -169,10 +170,13 @@ public:
 
 	/**
 	 * Array-like access to buffer.
-	 * Attention: Element[0] is the last added value (=Stack order)
+	 * Attention: Element[0] is the oldest element
 	 */
 	inline T operator [](size_t index) const {
-		return *(buffer + ((head - buffer + index) % capacity));
+		//return *(buffer + ((head - buffer + index) % capacity));
+		auto offset = (tail - buffer - index + capacity) % capacity;
+
+		return *(buffer + offset % capacity);
 	}
 
 	/**
